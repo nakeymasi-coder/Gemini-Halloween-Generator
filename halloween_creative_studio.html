@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Halloween Creative Studio — 10 Prompt Engine</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          pumpkin: { 400: '#ff9d42', 500: '#ff7a00', 600: '#e06100' },
+          gothic: { 800: '#15131d', 900: '#0d0b14', 950: '#07050b' },
+          purpleglow: { 400: '#c084fc', 500: '#9d4edd', 600: '#7b2cbf' },
+          witchgreen: { 400: '#80ff00', 500: '#52b788' },
+          slimepink: { 400: '#ff4fb3', 500: '#e60067' }
+        },
+        fontFamily: {
+          sans: ['Inter', 'sans-serif'],
+          creep: ['Creepster', 'cursive'],
+          serif: ['Cinzel', 'serif']
+        }
+      }
+    }
+  }
+</script>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Creepster&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Tone.js for Ambient Audio Synthesizer -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+<!-- Font Awesome / Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0d0b14; }
+  ::-webkit-scrollbar-thumb { background: #2a2538; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #ff7a00; }
+
+  .glass-panel {
+    background: rgba(21, 19, 29, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glow-border {
+    position: relative;
+  }
+  .glow-border::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(135deg, rgba(255,122,0,0.4), rgba(157,78,221,0.2), transparent);
+    border-radius: inherit;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .pulse-glow {
+    animation: pulseGlow 3s infinite alternate;
+  }
+  @keyframes pulseGlow {
+    0% { box-shadow: 0 0 15px rgba(255, 122, 0, 0.2); }
+    100% { box-shadow: 0 0 30px rgba(157, 78, 221, 0.4); }
+  }
+
+  /* Custom switch */
+  .toggle-checkbox:checked {
+    right: 0;
+    border-color: #ff7a00;
+  }
+  .toggle-checkbox:checked + .toggle-label {
+    background-color: #ff7a00;
+  }
+
+  canvas#bgCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+  }
+</style>
+</head>
+
+<body class="bg-gothic-950 text-slate-100 font-sans min-h-screen selection:bg-pumpkin-500 selection:text-black overflow-x-hidden relative">
+
+<!-- Background Ambient Canvas -->
+<canvas id="bgCanvas"></canvas>
+
+<!-- Notification Toast Container -->
+<div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<div class="relative z-10 max-w-[1600px] mx-auto px-4 py-6 md:px-8">
+  
+  <!-- Top Navigation Header -->
+  <header class="glass-panel rounded-3xl p-6 mb-8 border border-white/10 shadow-2xl relative overflow-hidden">
+    <div class="absolute -right-10 -top-10 w-60 h-60 bg-pumpkin-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -left-10 -bottom-10 w-60 h-60 bg-purpleglow-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <span class="px-3 py-1 text-xs font-extrabold uppercase tracking-widest bg-gradient-to-r from-pumpkin-500 to-purpleglow-500 text-black rounded-full shadow-lg">
+            Pro Suite v2.5
+          </span>
+          <span class="text-xs text-slate-400 flex items-center gap-1">
+            <i class="fa-solid fa-layer-group text-pumpkin-400"></i> 10 Standalone Image Engine
+          </span>
+        </div>
+        <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-pumpkin-400">
+          Halloween <span class="font-creep text-pumpkin-500 tracking-wider">Creative Studio</span>
+        </h1>
+        <p class="text-slate-400 text-sm md:text-base mt-2 max-w-2xl">
+          Craft cohesive 10-prompt design collections for AI generators (Midjourney, Flux, DALL-E 3). Never grid collages — always standalone high-conversion assets.
+        </p>
+      </div>
+
+      <!-- Quick Audio & Global Mode Tools -->
+      <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+        <!-- Spooky Soundscape Button -->
+        <button id="audioToggleBtn" class="flex-1 lg:flex-none px-4 py-3 rounded-2xl bg-gothic-800 hover:bg-gothic-800/80 border border-white/10 text-xs font-bold transition flex items-center justify-center gap-2 text-slate-300 hover:text-pumpkin-400 shadow-lg">
+          <i id="audioIcon" class="fa-solid fa-volume-xmark text-slate-500"></i>
+          <span id="audioText">Ambience Off</span>
+        </button>
+
+        <!-- Preset Load Quick Select -->
+        <div class="relative flex-1 lg:flex-none">
+          <select id="quickPresetBar" class="w-full bg-gothic-800 text-slate-200 text-xs font-bold py-3 px-4 rounded-2xl border border-white/10 outline-none focus:border-pumpkin-500 cursor-pointer appearance-none pr-8">
+            <option value="">⚡ Quick Load Preset...</option>
+          </select>
+          <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 pointer-events-none"></i>
+        </div>
+
+        <!-- Target AI Engine Selector -->
+        <div class="flex items-center bg-gothic-800 p-1 rounded-2xl border border-white/10 text-xs font-bold">
+          <button data-engine="mj" class="engine-btn px-3 py-2 rounded-xl bg-pumpkin-500 text-black shadow transition">Midjourney v6.1</button>
+          <button data-engine="flux" class="engine-btn px-3 py-2 rounded-xl text-slate-400 hover:text-white transition">Flux.1</button>
+          <button data-engine="dalle" class="engine-btn px-3 py-2 rounded-xl text-slate-400 hover:text-white transition">DALL-E 3</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-2 mt-8 pt-6 border-t border-white/10 overflow-x-auto no-scrollbar">
+      <button data-tab="tab-studio" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 bg-pumpkin-500 text-black shadow-lg transition">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> 1. Studio Builder
+      </button>
+      <button data-tab="tab-preview" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 bg-gothic-800 text-slate-400 hover:text-white border border-white/5 transition">
+        <i class="fa-solid fa-grip text-purpleglow-400"></i> 2. Visual 10-Card Preview
+      </button>
+      <button data-tab="tab-history" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 bg-gothic-800 text-slate-400 hover:text-white border border-white/5 transition">
+        <i class="fa-solid fa-bookmark text-witchgreen-400"></i> 3. History & Saved (<span id="savedCount">0</span>)
+      </button>
+      <button data-tab="tab-settings" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 bg-gothic-800 text-slate-400 hover:text-white border border-white/5 transition">
+        <i class="fa-solid fa-sliders text-slimepink-400"></i> 4. Generator Parameters
+      </button>
+    </div>
+  </header>
+
+  <!-- Sticky Quick Action Toolbar -->
+  <div class="sticky top-4 z-40 mb-8 glass-panel rounded-2xl p-3 border border-white/10 shadow-2xl flex flex-wrap items-center justify-between gap-3">
+    <div class="flex flex-wrap items-center gap-2">
+      <button id="generateBtn" class="px-5 py-3 rounded-xl bg-gradient-to-r from-pumpkin-500 to-pumpkin-600 text-black font-extrabold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition shadow-lg flex items-center gap-2">
+        <i class="fa-solid fa-bolt"></i> Generate 10 Prompts
+      </button>
+      <button id="remixBtn" class="px-4 py-3 rounded-xl bg-purpleglow-600 hover:bg-purpleglow-500 text-white font-extrabold text-xs uppercase tracking-wider active:scale-95 transition flex items-center gap-2">
+        <i class="fa-solid fa-shuffle"></i> Remix Collection
+      </button>
+      <button id="surpriseBtn" class="px-4 py-3 rounded-xl bg-slimepink-500 hover:bg-slimepink-400 text-white font-extrabold text-xs uppercase tracking-wider active:scale-95 transition flex items-center gap-2">
+        <i class="fa-solid fa-dice"></i> Surprise Me
+      </button>
+      <button id="resetBtn" class="px-4 py-3 rounded-xl bg-gothic-800 hover:bg-slate-800 text-slate-300 font-extrabold text-xs uppercase tracking-wider border border-white/10 active:scale-95 transition flex items-center gap-2">
+        <i class="fa-solid fa-rotate-left"></i> Reset
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button id="saveCollectionBtn" class="px-4 py-3 rounded-xl bg-witchgreen-500/20 hover:bg-witchgreen-500/30 text-witchgreen-400 border border-witchgreen-500/30 font-extrabold text-xs uppercase tracking-wider active:scale-95 transition flex items-center gap-2">
+        <i class="fa-solid fa-floppy-disk"></i> Save Collection
+      </button>
+      <button id="copyPromptBtn" class="px-5 py-3 rounded-xl bg-gothic-800 hover:bg-gothic-800/80 text-pumpkin-400 border border-pumpkin-500/40 font-extrabold text-xs uppercase tracking-wider active:scale-95 transition flex items-center gap-2">
+        <i class="fa-regular fa-copy"></i> Copy Full Prompt
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: STUDIO BUILDER -->
+  <div id="tab-studio" class="tab-content block space-y-8">
+    
+    <!-- Top Configuration Row: Design Type & Preset -->
+    <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-pumpkin-500 text-black text-xs font-black flex items-center justify-center">1</span>
+            Primary Design & Preset
+          </h2>
+          <p class="text-xs text-slate-400">Establish the core format and theme baseline.</p>
+        </div>
+        <span class="text-xs text-slate-500 italic"><i class="fa-solid fa-lock text-pumpkin-500"></i> Lock toggles preserve values during Remix</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Design Type -->
+        <div class="space-y-2" data-key="designType">
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-extrabold uppercase tracking-wider text-slate-300">Design Output Format</label>
+            <button class="lock-btn text-[10px] font-bold px-2 py-1 rounded bg-gothic-800 border border-white/10 text-slate-400 hover:text-white transition">
+              🔓 Unlocked
+            </button>
+          </div>
+          <select class="single-select w-full bg-gothic-900 border border-white/10 rounded-2xl p-3 text-sm text-slate-200 outline-none focus:border-pumpkin-500">
+            <option>None</option>
+            <option selected>Halloween Background</option>
+            <option>Halloween Pattern</option>
+            <option>Halloween Sticker Design</option>
+            <option>Halloween Element</option>
+          </select>
+        </div>
+
+        <!-- Preset Selection -->
+        <div class="space-y-2" data-key="preset">
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-extrabold uppercase tracking-wider text-slate-300">Curated Preset World</label>
+            <button class="lock-btn text-[10px] font-bold px-2 py-1 rounded bg-gothic-800 border border-white/10 text-slate-400 hover:text-white transition">
+              🔓 Unlocked
+            </button>
+          </div>
+          <select id="presetSelect" class="single-select w-full bg-gothic-900 border border-white/10 rounded-2xl p-3 text-sm text-slate-200 outline-none focus:border-pumpkin-500">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-Select Category Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Section 2: Core Concept -->
+      <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-white/10 pb-3">
+          <span class="w-6 h-6 rounded-full bg-pumpkin-500 text-black text-xs font-black flex items-center justify-center">2</span>
+          Core Concept & Focal Entities
+        </h2>
+        <div id="coreFields" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- Section 3: Style & Mood -->
+      <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-white/10 pb-3">
+          <span class="w-6 h-6 rounded-full bg-pumpkin-500 text-black text-xs font-black flex items-center justify-center">3</span>
+          Style, Aesthetic & Mood
+        </h2>
+        <div id="styleFields" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- Section 4: Color, Material & Finish -->
+      <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-white/10 pb-3">
+          <span class="w-6 h-6 rounded-full bg-pumpkin-500 text-black text-xs font-black flex items-center justify-center">4</span>
+          Color, Material & Surfaces
+        </h2>
+        <div id="finishFields" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- Section 5: Composition & Framing -->
+      <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-white/10 pb-3">
+          <span class="w-6 h-6 rounded-full bg-pumpkin-500 text-black text-xs font-black flex items-center justify-center">5</span>
+          Composition & Background
+        </h2>
+        <div id="compositionFields" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- Section 6: Decorative Details -->
+      <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-white/10 pb-3">
+          <span class="w-6 h-6 rounded-full bg-pumpkin-500 text-black text-xs font-black flex items-center justify-center">6</span>
+          Typography & Props
+        </h2>
+        <div id="detailFields" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- Section 7: Output Settings -->
+      <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-white/10 pb-3">
+          <span class="w-6 h-6 rounded-full bg-pumpkin-500 text-black text-xs font-black flex items-center justify-center">7</span>
+          Output & Canvas Options
+        </h2>
+        <div id="outputFields" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div>
+
+    </div>
+
+    <!-- Master Generated Prompt Text Area -->
+    <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-2xl space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-terminal text-pumpkin-400"></i> Generated Collection Master Prompt
+          </h2>
+          <p class="text-xs text-slate-400">Ready for Midjourney, Flux, DALL-E, or Stable Diffusion.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="downloadTxtBtn" class="px-3 py-2 rounded-xl bg-gothic-800 hover:bg-slate-800 border border-white/10 text-xs font-bold text-slate-300 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-file-arrow-down text-pumpkin-400"></i> Download TXT
+          </button>
+          <button id="downloadJsonBtn" class="px-3 py-2 rounded-xl bg-gothic-800 hover:bg-slate-800 border border-white/10 text-xs font-bold text-slate-300 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-code text-purpleglow-400"></i> Download JSON
+          </button>
+        </div>
+      </div>
+
+      <div class="relative">
+        <textarea id="output" readonly rows="16" class="w-full bg-gothic-950/90 border border-white/10 rounded-2xl p-4 text-xs font-mono text-emerald-400 leading-relaxed outline-none focus:border-pumpkin-500 transition shadow-inner select-all" placeholder="Click 'Generate 10 Prompts' to build your prompt collection..."></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB 2: VISUAL 10-CARD PREVIEW -->
+  <div id="tab-preview" class="tab-content hidden space-y-6">
+    <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-grip-vertical text-pumpkin-500"></i> 10 Standalone Visual Cards
+        </h2>
+        <p class="text-xs text-slate-400">Each card contains a single image generation prompt with dynamic SVG concept mockups.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs px-3 py-1.5 rounded-xl bg-pumpkin-500/10 border border-pumpkin-500/30 text-pumpkin-400 font-bold">
+          10 Canvases • Zero Overlaps
+        </span>
+      </div>
+    </div>
+
+    <div id="visualCardsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+      <!-- 10 Visual Mockup Cards injected by JS -->
+    </div>
+  </div>
+
+  <!-- TAB 3: HISTORY & SAVED COLLECTIONS -->
+  <div id="tab-history" class="tab-content hidden space-y-6">
+    <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl flex items-center justify-between">
+      <div>
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-box-archive text-witchgreen-400"></i> Saved Collections Library
+        </h2>
+        <p class="text-xs text-slate-400">Saved prompt batches are stored locally in your browser.</p>
+      </div>
+      <button id="clearHistoryBtn" class="px-3 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 text-xs font-bold transition">
+        Clear All History
+      </button>
+    </div>
+
+    <div id="savedCollectionsContainer" class="space-y-4">
+      <div class="text-center py-12 glass-panel rounded-3xl border border-white/5 text-slate-500 text-sm">
+        <i class="fa-solid fa-folder-open text-3xl mb-3 text-slate-600"></i>
+        <p>No saved collections yet. Click "Save Collection" on any generated prompt!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: GENERATOR PARAMETERS -->
+  <div id="tab-settings" class="tab-content hidden space-y-6">
+    <div class="glass-panel rounded-3xl p-6 border border-white/10 shadow-xl space-y-6">
+      <div>
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-slimepink-400"></i> Fine-Tuning AI Parameters
+        </h2>
+        <p class="text-xs text-slate-400">Append model flags, negative prompts, and aspect ratio modifiers.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Midjourney Aspect Ratio Tag -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-slate-300">Midjourney Aspect Ratio Flag (`--ar`)</label>
+          <select id="paramAr" class="w-full bg-gothic-900 border border-white/10 rounded-2xl p-3 text-xs text-slate-200 outline-none focus:border-pumpkin-500">
+            <option value="--ar 1:1">1:1 Square (1024x1024)</option>
+            <option value="--ar 4:5" selected>4:5 Social Feed (1024x1280)</option>
+            <option value="--ar 3:4">3:4 Poster (900x1200)</option>
+            <option value="--ar 9:16">9:16 Vertical Story (1080x1920)</option>
+            <option value="--ar 16:9">16:9 Landscape Banner (1920x1080)</option>
+          </select>
+        </div>
+
+        <!-- Midjourney Version Tag -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-slate-300">Midjourney Version Tag</label>
+          <select id="paramVersion" class="w-full bg-gothic-900 border border-white/10 rounded-2xl p-3 text-xs text-slate-200 outline-none focus:border-pumpkin-500">
+            <option value="--v 6.1" selected>--v 6.1 (Latest)</option>
+            <option value="--v 6.0">--v 6.0</option>
+            <option value="--v 5.2">--v 5.2</option>
+            <option value="--niji 6">--niji 6 (Anime Style)</option>
+          </select>
+        </div>
+
+        <!-- Stylize Value -->
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs">
+            <label class="font-bold text-slate-300">Stylize Value (`--s`): <span id="stylizeVal">250</span></label>
+          </div>
+          <input id="paramStylize" type="range" min="0" max="1000" step="50" value="250" class="w-full accent-pumpkin-500 cursor-pointer">
+        </div>
+
+        <!-- Chaos Value -->
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs">
+            <label class="font-bold text-slate-300">Chaos Variety (`--c`): <span id="chaosVal">10</span></label>
+          </div>
+          <input id="paramChaos" type="range" min="0" max="100" step="5" value="10" class="w-full accent-purpleglow-500 cursor-pointer">
+        </div>
+
+        <!-- Negative Prompt Text -->
+        <div class="md:col-span-2 space-y-2">
+          <label class="text-xs font-bold text-slate-300">Default Negative Prompt / Exclusion Filters (`--no`)</label>
+          <input id="paramNegative" type="text" value="blurry, collage, grid, contact sheet, watermark, text errors, low resolution, duplicate subjects" class="w-full bg-gothic-900 border border-white/10 rounded-2xl p-3 text-xs text-slate-200 outline-none focus:border-pumpkin-500">
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const presets = [
+  "None","Cute Halloween","Glam Halloween","Spooky Cute","Gothic Glam","Candy Halloween","Pastel Halloween","Neon Halloween","Retro Halloween","Vintage Halloween","Luxury Halloween","Whimsical Halloween","Dark Feminine Halloween","Kawaii Halloween","Cartoon Halloween","Editorial Halloween","Halloween Bakery","Haunted Boutique","Ghost Fashion","Witchy Beauty","Monster Candy Shop","Pumpkin Disco","Skeleton Glam","Halloween Carnival","Haunted Toy Shop","Spooky Dessert Bar","Halloween Fashion House",
+  "Midnight Candy Run","Velvet Vampire Lounge","Ghostly Tea Party","Pumpkin Perfume Atelier","Haunted Dollhouse Couture","Black Cat Beauty Bar","Candy Corn Cabaret","Spooky Paris Café","Witch Hat Millinery Shop","Monster Nail Salon","Moonlit Pumpkin Garden","Ghost Glam Sleepover","Skeleton Supper Club","Haunted Jewelry Box","Potion Bottle Bakery","Pastel Graveyard Picnic","Vampire Vanity Room","Bat Wing Ballroom","Pumpkin Patch Runway","Haunted Candy Hotel","Ghost Bride Boutique","Spooky Ice Cream Parlor","Witchy Bookshop","Monster Makeup Counter","Pumpkin Spa Day","Halloween Flower Market","Coffin Shaped Candy Store","Ghostly Record Shop","Haunted Roller Rink","Skeleton Beauty School","Moonlit Apothecary","Candy Cauldron Kitchen","Spooky Soda Fountain","Pumpkin Glasshouse","Vampire Dessert Cart","Glam Graveyard Garden","Haunted Handbag Shop","Witchy Perfume Lab","Ghost Disco Motel","Monster Donut Shop","Pumpkin Beauty Counter","Skeleton Tea Room","Pastel Potion Party","Midnight Mask Boutique","Candy Bat Bakery","Haunted Champagne Bar","Ghostly Nail Studio","Witch Hat Candy Factory","Pumpkin Crystal Conservatory","Spooky Fashion Magazine","Skeleton Flower Shop","Black Cat Patisserie","Monster Jewelry Atelier","Haunted Vanity Collection","Velvet Pumpkin Palace","Candy Ghost Arcade","Witchy Candle Studio","Pastel Vampire Picnic","Ghost Shopping District","Halloween Luxury Hotel","Pumpkin Moon Café","Skeleton Sewing Room","Bat Beauty Boutique","Haunted Dessert Museum","Monster Perfume House","Candy Corn Fashion Week","Spooky Toy Parade","Ghost Spa Retreat","Witchy Chocolate Shop","Pumpkin Party Penthouse","Midnight Halloween Market","Velvet Ghost Theater","Skeleton Candy Laboratory","Haunted Floral Studio","Halloween Glam Dollhouse","Black Cat Champagne Lounge","Pumpkin Pop Art Gallery","Ghostly Fashion Closet","Monster Sweet Shop","Pastel Haunted Greenhouse"
+];
+
+const fieldSets = {
+  coreFields: {
+    "Main Subject":["Pumpkin","Ghost","Witch","Black Cat","Skeleton","Bat","Potion Bottle","Cauldron","Candy Corn","Haunted Cake","Magic Mirror","Coffin Purse","Pumpkin Perfume Bottle","Ghost Handbag","Skeleton Pastry","Monster Cupcake","Crystal Ball","Haunted Vanity","Spooky Floral Arrangement","Mini Haunted Shop"],
+    "Halloween Character":["Friendly Ghost","Glam Witch","Fashion Skeleton","Sassy Black Cat","Candy Monster","Mini Vampire","Pumpkin Diva","Ghost Baker","Skeleton Stylist","Witch Florist","Monster Barista"],
+    "Halloween Object":["Cauldron","Potion","Broom","Lantern","Candle","Magic Mirror","Spell Book","Candy Bucket","Coffin Box","Perfume Bottle","Handbag","Cake Stand","Teacup","Vanity Tray"],
+    "Halloween Creature":["Bat","Spider","Black Cat","Raven","Ghost","Mini Monster","Snake","Moth","Fantasy Halloween Creature"],
+    "Theme":["Haunted Boutique","Halloween Bakery","Spooky Fashion","Candy World","Potion Lab","Midnight Garden","Ghost Party","Luxury Haunted Hotel","Monster Market","Halloween Beauty Bar"]
+  },
+  styleFields:{
+    "Aesthetic":["Glam","Spooky Cute","Luxury","Pastel","Neon","Retro","Vintage","Gothic","Dark Feminine","Kawaii","Whimsical","Editorial","Candy-Coated","Maximalist","Minimal Luxe"],
+    "Art Style":["Glossy 3D","Polished Illustration","Painterly Digital Art","Editorial Collage","Cartoon Realism","Clay Render","Paper Cut","Vector-Inspired","Vintage Print","Soft Airbrush"],
+    "Mood":["Playful","Mysterious","Cute","Bold","Elegant","Campy","Dreamy","Moody","Cheeky","Magical","Dramatic"],
+    "Color Palette":["Orange + Black + White","Hot Pink + Orange + Black","Lavender + Peach + Cream","Neon Green + Purple + Black","Candy Pink + Teal + Orange","Black + Metallic Gold + Orange","Pastel Rainbow Halloween","Red + Black + Plum","Mint + Lilac + Peach","Cream + Mocha + Burnt Orange"]
+  },
+  finishFields:{
+    "Texture":["Smooth","Velvet","Sugar-Coated","Glitter","Frosted Glass","Satin","Embossed","Marbled","Candy Gloss","Cracked Ceramic"],
+    "Surface Finish":["Glossy","Matte","Metallic","Holographic","Jelly","Chrome","Vinyl","Pearlescent","Glass","Lacquered"],
+    "Material":["Glass","Acrylic","Ceramic","Velvet","Metal","Candy","Frosting","Paper","Vinyl","Resin","Fabric","Crystal"],
+    "Lighting":["Soft Studio","Orange Rim Light","Purple Glow","Candlelit","Backlit Glow","Neon Accent","Moonlit","Editorial Spotlight","Warm Ambient"],
+    "Glow":["None","Soft Glow","Neon Glow","Candle Glow","Moon Glow","Candy Glow","Bioluminescent","Edge Glow"]
+  },
+  compositionFields:{
+    "Composition":["Centered Hero","Full Bleed","Floating Product Layout","Editorial Still Life","Symmetrical","Asymmetrical Luxe","Layered Scene","Flat Lay","Close-Up Macro","Pattern-Focused"],
+    "Layout":["Minimal","Balanced","Dense but Clean","Scattered","Grid-Inspired","Vertical Stack","Diagonal Flow","Circular Arrangement"],
+    "Background Style":["None","Solid Color","Gradient","Haunted Boutique Interior","Luxury Vanity","Candy Shop","Moonlit Garden","Reflective Floor","Soft Studio","Patterned Wallpaper","Foggy Street","Spooky Bakery"],
+    "Pattern Style":["None","Seamless Repeat","Non-Repeating Decorative","Tossed Repeat","Half-Drop Repeat","Symmetrical Repeat","Dense Micro Pattern","Large Motif Repeat"],
+    "Borders":["None","White Border","Colored Border","Metallic Border","Scalloped","Wavy","Vintage Frame","Glossy Outline"],
+    "Frames":["None","Ornate Gothic","Minimal Thin","Candy Frame","Pumpkin Vine Frame","Ghost Frame","Floral Halloween Frame"]
+  },
+  detailFields:{
+    "Typography Style":["None","Chunky Serif","Bold Sans Serif","Retro Bubble","Elegant Serif","Gothic Serif","Hand Lettered","Candy Typography"],
+    "Text Treatment":["None","Flat","3D Glass","Metallic","Jelly","Glow","Embossed","Glitter","Chrome"],
+    "Decorative Elements":["Bats","Ghosts","Candy Corn","Pumpkins","Stars","Moons","Spiders","Ribbons","Pearls","Mini Florals","Candy Sprinkles","Wax Drips"],
+    "Supporting Elements":["Candles","Perfume Bottles","Mini Cakes","Candy Bags","Flowers","Potion Bottles","Tea Cups","Handbags","Shoes","Jewelry","Books"],
+    "Seasonal Props":["Jack-o'-Lanterns","Candy Buckets","Broomsticks","Spell Books","Pumpkin Garlands","Costume Masks","Lanterns","Mini Coffins"],
+    "Magical Effects":["Sparkles","Floating Dust","Potion Mist","Glowing Stars","Magic Swirls","Tiny Floating Ghosts"],
+    "Spooky Effects":["Fog","Soft Smoke","Wax Drips","Cracked Surfaces","Shadow Shapes","Cobweb Accents"]
+  },
+  outputFields:{
+    "Sticker Finish":["None","Glossy Vinyl","Matte Vinyl","Holographic","Glitter","Metallic","Jelly","Dimensional"],
+    "Cut-Line Style":["None","Clean White Cut Line","Colored Cut Line","Thin Cut Line","Thick Cut Line"],
+    "Background Transparency":["None","Opaque","Transparent","Transparent-Background Ready"],
+    "Image Orientation":["None","Square","Portrait","Landscape","Vertical","Horizontal"],
+    "Aspect Ratio":["None","1:1","3:4","4:5","2:3","9:16","16:9","21:9"]
+  }
+};
+
+const lockedKeys = new Set();
+const multiSelections = {};
+let currentTargetEngine = 'mj';
+let isAudioActive = false;
+let synthPad, windNoise, clickChime;
+let savedCollections = JSON.parse(localStorage.getItem('halloween_collections') || '[]');
+
+function createMultiSelectField(label, options) {
+  multiSelections[label] = [];
+  const fieldContainer = document.createElement("div");
+  fieldContainer.className = "space-y-1.5 relative";
+  fieldContainer.dataset.key = label;
+
+  fieldContainer.innerHTML = `
+    <div class="flex justify-between items-center">
+      <label class="text-[11px] font-extrabold uppercase tracking-wider text-slate-300">${label}</label>
+      <button class="lock-btn text-[10px] font-bold px-2 py-0.5 rounded bg-gothic-900 border border-white/10 text-slate-400 hover:text-white transition">
+        🔓 Unlocked
+      </button>
+    </div>
+    <div class="relative">
+      <button type="button" class="multi-btn w-full bg-gothic-900 border border-white/10 rounded-xl p-2.5 text-xs text-left text-slate-200 flex justify-between items-center outline-none focus:border-pumpkin-500">
+        <span class="truncate font-medium">None</span>
+        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500"></i>
+      </button>
+      <div class="multi-menu hidden absolute top-full left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-gothic-900 border border-white/20 rounded-2xl p-2 z-50 shadow-2xl space-y-1">
+        <div class="px-2 py-1 mb-1 border-b border-white/10">
+          <input type="text" placeholder="Search..." class="search-input w-full bg-gothic-950 border border-white/10 rounded-lg p-1.5 text-xs text-white outline-none focus:border-pumpkin-500">
+        </div>
+        <label class="opt-row flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 cursor-pointer text-xs text-slate-300">
+          <input type="checkbox" value="None" checked class="accent-pumpkin-500">
+          <span>None</span>
+        </label>
+        ${options.map(opt => `
+          <label class="opt-row flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 cursor-pointer text-xs text-slate-300">
+            <input type="checkbox" value="${opt}" class="accent-pumpkin-500">
+            <span>${opt}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  const btn = fieldContainer.querySelector('.multi-btn');
+  const menu = fieldContainer.querySelector('.multi-menu');
+  const searchInput = fieldContainer.querySelector('.search-input');
+  const lockBtn = fieldContainer.querySelector('.lock-btn');
+
+  // Toggle Dropdown Menu
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.multi-menu').forEach(m => { if (m !== menu) m.classList.add('hidden'); });
+    menu.classList.toggle('hidden');
+    if (!menu.classList.contains('hidden')) searchInput.focus();
+  });
+
+  // Search filter
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    menu.querySelectorAll('.opt-row').forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(query) ? 'flex' : 'none';
+    });
+  });
+
+  // Handle Checkboxes
+  menu.addEventListener('change', (e) => {
+    if (!e.target.matches('input[type="checkbox"]')) return;
+    playClickSFX();
+    const val = e.target.value;
+
+    if (val === "None" && e.target.checked) {
+      menu.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (cb.value !== "None") cb.checked = false;
+      });
+    } else if (val !== "None" && e.target.checked) {
+      const noneCb = menu.querySelector('input[value="None"]');
+      if (noneCb) noneCb.checked = false;
+    }
+
+    const checkedVals = [...menu.querySelectorAll('input[type="checkbox"]:checked')]
+      .map(cb => cb.value)
+      .filter(v => v !== "None");
+
+    multiSelections[label] = checkedVals;
+    btn.querySelector('span').textContent = checkedVals.length ? checkedVals.join(', ') : 'None';
+  });
+
+  // Lock Button Handler
+  lockBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleLock(label, lockBtn);
+  });
+
+  return fieldContainer;
+}
+
+function initFields() {
+  Object.entries(fieldSets).forEach(([containerId, fields]) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    Object.entries(fields).forEach(([label, opts]) => {
+      container.appendChild(createMultiSelectField(label, opts));
+    });
+  });
+
+  // Populate Presets
+  const presetSelect = document.getElementById('presetSelect');
+  const quickPresetBar = document.getElementById('quickPresetBar');
+  presets.forEach(p => {
+    const o1 = document.createElement('option');
+    o1.value = p; o1.textContent = p;
+    presetSelect.appendChild(o1);
+
+    if (p !== "None") {
+      const o2 = document.createElement('option');
+      o2.value = p; o2.textContent = p;
+      quickPresetBar.appendChild(o2);
+    }
+  });
+
+  // Preset Select Listener
+  presetSelect.addEventListener('change', () => playClickSFX());
+  quickPresetBar.addEventListener('change', (e) => {
+    if (e.target.value) {
+      presetSelect.value = e.target.value;
+      playClickSFX();
+      generateMasterPrompt();
+    }
+  });
+
+  // Lock listener for Design Type & Preset
+  document.querySelectorAll('[data-key="designType"], [data-key="preset"]').forEach(wrap => {
+    const key = wrap.dataset.key;
+    const lockBtn = wrap.querySelector('.lock-btn');
+    if (lockBtn) {
+      lockBtn.addEventListener('click', () => toggleLock(key, lockBtn));
+    }
+  });
+}
+
+function toggleLock(key, btn) {
+  playClickSFX();
+  if (lockedKeys.has(key)) {
+    lockedKeys.delete(key);
+    btn.textContent = "🔓 Unlocked";
+    btn.classList.remove('bg-pumpkin-500', 'text-black', 'border-pumpkin-500');
+    btn.classList.add('bg-gothic-900', 'text-slate-400');
+  } else {
+    lockedKeys.add(key);
+    btn.textContent = "🔒 Locked";
+    btn.classList.remove('bg-gothic-900', 'text-slate-400');
+    btn.classList.add('bg-pumpkin-500', 'text-black', 'border-pumpkin-500');
+  }
+}
+
+function getSingleVal(key) {
+  const el = document.querySelector(`[data-key="${key}"] select`);
+  return el ? el.value : "None";
+}
+
+function getMultiVal(label) {
+  const arr = multiSelections[label] || [];
+  return arr.length ? arr.join(", ") : "None";
+}
+
+function setRandomMultiField(field) {
+  const key = field.dataset.key;
+  if (lockedKeys.has(key)) return;
+
+  const boxes = [...field.querySelectorAll('.multi-menu input[type="checkbox"]')].filter(cb => cb.value !== "None");
+  boxes.forEach(cb => cb.checked = false);
+
+  const count = Math.random() < 0.5 ? 1 : Math.min(2, boxes.length);
+  const selected = [...boxes].sort(() => Math.random() - 0.5).slice(0, count);
+
+  selected.forEach(cb => cb.checked = true);
+  const vals = selected.map(cb => cb.value);
+  multiSelections[key] = vals;
+
+  const noneCb = field.querySelector('.multi-menu input[value="None"]');
+  if (noneCb) noneCb.checked = (vals.length === 0);
+
+  field.querySelector('.multi-btn span').textContent = vals.length ? vals.join(", ") : "None";
+}
+
+function randomizeAll() {
+  const ds = document.querySelector('[data-key="designType"] select');
+  const ps = document.querySelector('[data-key="preset"] select');
+
+  if (!lockedKeys.has("designType") && ds) {
+    ds.selectedIndex = 1 + Math.floor(Math.random() * (ds.options.length - 1));
+  }
+  if (!lockedKeys.has("preset") && ps) {
+    ps.selectedIndex = 1 + Math.floor(Math.random() * (ps.options.length - 1));
+  }
+
+  document.querySelectorAll('.multi-menu').forEach(menu => {
+    const field = menu.closest('[data-key]');
+    if (field) setRandomMultiField(field);
+  });
+}
+
+function resetAll() {
+  playClickSFX();
+  document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+  document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach(cb => cb.checked = (cb.value === "None"));
+  document.querySelectorAll('.multi-btn span').forEach(s => s.textContent = "None");
+  Object.keys(multiSelections).forEach(k => multiSelections[k] = []);
+  lockedKeys.clear();
+  document.querySelectorAll('.lock-btn').forEach(b => {
+    b.textContent = "🔓 Unlocked";
+    b.classList.remove('bg-pumpkin-500', 'text-black', 'border-pumpkin-500');
+    b.classList.add('bg-gothic-900', 'text-slate-400');
+  });
+  document.getElementById("output").value = "";
+  document.getElementById("visualCardsGrid").innerHTML = "";
+  showToast("Studio reset to defaults", "info");
+}
+
+function buildPromptText(isRemix = false) {
+  const designType = getSingleVal("designType");
+  const preset = getSingleVal("preset");
+
+  const keys = [
+    "Main Subject","Halloween Character","Halloween Object","Halloween Creature","Theme","Aesthetic","Art Style","Mood",
+    "Color Palette","Texture","Surface Finish","Material","Lighting","Glow","Composition","Layout","Background Style",
+    "Pattern Style","Borders","Frames","Typography Style","Text Treatment","Decorative Elements","Supporting Elements",
+    "Seasonal Props","Magical Effects","Spooky Effects","Sticker Finish","Cut-Line Style","Background Transparency",
+    "Image Orientation","Aspect Ratio"
+  ];
+
+  const data = {};
+  keys.forEach(k => data[k] = getMultiVal(k));
+
+  // Get Parameter values
+  const arTag = document.getElementById('paramAr').value;
+  const vTag = document.getElementById('paramVersion').value;
+  const stylizeVal = document.getElementById('paramStylize').value;
+  const chaosVal = document.getElementById('paramChaos').value;
+  const negativeVal = document.getElementById('paramNegative').value;
+
+  let extraFlags = "";
+  if (currentTargetEngine === 'mj') {
+    extraFlags = ` ${arTag} ${vTag} --s ${stylizeVal} --c ${chaosVal} --no ${negativeVal}`;
+  } else if (currentTargetEngine === 'flux') {
+    extraFlags = ` --aspect ${arTag.replace('--ar ', '')} --quality high --guidance 3.5`;
+  }
+
+  const lines = [];
+  lines.push(`HALLOWEEN CREATIVE STUDIO — 10 STANDALONE DESIGN COLLECTION`);
+  lines.push(`========================================================================`);
+  lines.push(`SYSTEM MANDATE: Generate exactly 10 separate standalone images based on this direction.`);
+  lines.push(``);
+  lines.push(`DESIGN TYPE: ${designType}`);
+  lines.push(`PRESET: ${preset}`);
+  keys.forEach(k => lines.push(`${k.toUpperCase()}: ${data[k]}`));
+  lines.push(``);
+  lines.push(`MASTER CREATIVE DIRECTION:`);
+  lines.push(`Create premium, high-resolution, professional, commercially appealing Halloween artwork with a polished, bright, colorful, detailed, playful, scroll-stopping digital-product aesthetic. Etsy-ready and Pinterest-worthy. Prioritize high-conversion visual storytelling.`);
+  lines.push(``);
+
+  if (data["Pattern Style"].toLowerCase().includes("seamless")) {
+    lines.push(`PATTERN RULE: True seamless repeating pattern with perfectly clean tile edges.`);
+    lines.push(``);
+  }
+
+  if (designType.includes("Sticker")) {
+    lines.push(`STICKER RULES: Clean silhouettes, strong readability, professional die-cut lines, standalone elements.`);
+    lines.push(``);
+  }
+
+  lines.push(`QUALITY PROTECTION: Avoid blurry edges, muddy colors, warped anatomy, duplicate subjects, accidental text glitches, or collages.`);
+  lines.push(``);
+  lines.push(`OUTPUT RULE: Produce 10 separate image generation jobs. Never combine into a single multi-grid canvas.`);
+  lines.push(``);
+  lines.push(`------------------------------------------------------------------------`);
+  lines.push(`10 INDIVIDUAL PROMPT JOBS:`);
+  lines.push(`------------------------------------------------------------------------`);
+
+  const variations = [
+    "centered hero composition with refined decorative framing",
+    "editorial close-up with layered supporting props",
+    "playful asymmetrical arrangement with unexpected scale changes",
+    "premium flat-lay composition with polished surface details",
+    "dramatic spotlight scene with elevated material contrast",
+    "whimsical floating arrangement with strong negative space",
+    "luxury boutique-inspired scene with styled miniature props",
+    "bold pattern-led composition with a different motif rhythm",
+    "close-up product-style composition with tactile textures",
+    "final statement design with a surprising mashup of compatible Halloween details"
+  ];
+
+  const designPrompts = [];
+
+  variations.forEach((v, i) => {
+    const singlePrompt = `DESIGN ${i + 1}: Create one standalone ${designType === "None" ? "Halloween artwork" : designType} using the ${preset === "None" ? "Halloween" : preset} direction. Main focus: ${data["Main Subject"] === "None" ? "an imaginative Halloween subject" : data["Main Subject"]}. Style: ${data["Aesthetic"]}, ${data["Art Style"]}, ${data["Mood"]}. Palette: ${data["Color Palette"]}. Material: ${data["Material"]} with ${data["Texture"]} texture and ${data["Surface Finish"]} finish. Lighting: ${data["Lighting"]}. Layout: ${v}. Background: ${data["Background Style"]}. Props: ${data["Supporting Elements"]}, ${data["Seasonal Props"]}. Composition: ${data["Composition"]}.${extraFlags}`;
+    
+    designPrompts.push({
+      num: i + 1,
+      prompt: singlePrompt,
+      variation: v,
+      subject: data["Main Subject"],
+      palette: data["Color Palette"]
+    });
+
+    lines.push(singlePrompt);
+    lines.push(``);
+  });
+
+  if (isRemix) {
+    lines.push(`REMIX INSTRUCTION: Reinterpret the collection with fresh compositions, alternate lighting, and modified supporting prop arrangements.`);
+  }
+
+  return { fullText: lines.join("\n"), designPrompts };
+}
+
+function generateMasterPrompt(isRemix = false) {
+  playClickSFX();
+  const { fullText, designPrompts } = buildPromptText(isRemix);
+  document.getElementById("output").value = fullText;
+  renderVisualCards(designPrompts);
+  showToast(isRemix ? "Collection Remixed!" : "10-Prompt Collection Generated!", "success");
+}
+
+function renderVisualCards(prompts) {
+  const container = document.getElementById("visualCardsGrid");
+  container.innerHTML = "";
+
+  prompts.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "glass-panel rounded-2xl p-4 border border-white/10 hover:border-pumpkin-500/50 transition flex flex-col justify-between space-y-3 group shadow-xl";
+
+    // Build stylized procedural SVG mockup matching topic
+    const svgIllustration = createProceduralMockupSVG(item.subject, item.palette, item.num);
+
+    card.innerHTML = `
+      <div class="space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-pumpkin-500 text-black">
+            DESIGN #${item.num}
+          </span>
+          <button class="copy-card-btn text-xs text-slate-400 hover:text-pumpkin-400 transition" title="Copy Design Prompt">
+            <i class="fa-regular fa-copy"></i>
+          </button>
+        </div>
+
+        <div class="w-full h-36 rounded-xl bg-gothic-950/80 overflow-hidden flex items-center justify-center p-2 border border-white/5 relative group-hover:scale-[1.02] transition">
+          ${svgIllustration}
+        </div>
+
+        <p class="text-[11px] font-mono text-slate-300 line-clamp-4 leading-relaxed bg-gothic-950/50 p-2 rounded-lg border border-white/5">
+          ${item.prompt}
+        </p>
+      </div>
+
+      <button class="copy-card-btn w-full py-2 rounded-xl bg-gothic-800 hover:bg-pumpkin-500 hover:text-black text-xs font-bold transition flex items-center justify-center gap-1.5 border border-white/10">
+        <i class="fa-solid fa-copy"></i> Copy Prompt
+      </button>
+    `;
+
+    card.querySelectorAll('.copy-card-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        copyToClipboard(item.prompt);
+        showToast(`Design #${item.num} Prompt Copied!`, "success");
+      });
+    });
+
+    container.appendChild(card);
+  });
+
+  // Update badge count
+  document.getElementById('savedCount').textContent = savedCollections.length;
+}
+
+function createProceduralMockupSVG(subject, palette, seed) {
+  let mainColor = "#ff7a00";
+  let accentColor = "#9d4edd";
+  let bgGradientStart = "#15131d";
+
+  if (palette.includes("Hot Pink")) mainColor = "#ff4fb3";
+  if (palette.includes("Neon Green")) mainColor = "#80ff00";
+  if (palette.includes("Lavender")) mainColor = "#c084fc";
+
+  // Different shapes according to subject
+  let subjectGraphic = `<circle cx="50" cy="50" r="25" fill="${mainColor}" opacity="0.8"/>`;
+  if (subject.includes("Pumpkin")) {
+    subjectGraphic = `
+      <path d="M 35 55 C 35 35, 65 35, 65 55 C 65 75, 35 75, 35 55" fill="${mainColor}" />
+      <path d="M 42 55 C 42 38, 58 38, 58 55 C 58 72, 42 72, 42 55" fill="#e06100" />
+      <rect x="48" y="32" width="4" height="8" fill="#52b788" rx="2" />
+    `;
+  } else if (subject.includes("Ghost")) {
+    subjectGraphic = `
+      <path d="M 35 65 C 35 35, 65 35, 65 65 C 60 60, 55 65, 50 60 C 45 65, 40 60, 35 65 Z" fill="#ffffff" opacity="0.9" />
+      <circle cx="44" cy="45" r="2.5" fill="#0d0b14" />
+      <circle cx="56" cy="45" r="2.5" fill="#0d0b14" />
+    `;
+  } else if (subject.includes("Cat")) {
+    subjectGraphic = `
+      <polygon points="35,35 42,50 35,50" fill="#2a2538" />
+      <polygon points="65,35 58,50 65,50" fill="#2a2538" />
+      <circle cx="50" cy="55" r="16" fill="#15131d" />
+      <circle cx="44" cy="52" r="2" fill="${accentColor}" />
+      <circle cx="56" cy="52" r="2" fill="${accentColor}" />
+    `;
+  } else if (subject.includes("Witch")) {
+    subjectGraphic = `
+      <polygon points="50,25 30,60 70,60" fill="${accentColor}" />
+      <ellipse cx="50" cy="60" rx="25" ry="5" fill="#15131d" />
+    `;
+  }
+
+  return `
+    <svg viewBox="0 0 100 100" class="w-full h-full">
+      <defs>
+        <radialGradient id="grad-${seed}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="${accentColor}" stop-opacity="0.3" />
+          <stop offset="100%" stop-color="${bgGradientStart}" stop-opacity="0.8" />
+        </radialGradient>
+      </defs>
+      <rect width="100" height="100" rx="12" fill="url(#grad-${seed})" />
+      <circle cx="50" cy="50" r="35" stroke="${mainColor}" stroke-width="0.5" fill="none" stroke-dasharray="2 2" />
+      ${subjectGraphic}
+      <circle cx="${20 + (seed * 7) % 60}" cy="${20 + (seed * 11) % 60}" r="1.5" fill="#ffffff" opacity="0.6" />
+      <circle cx="${30 + (seed * 13) % 50}" cy="${70 - (seed * 5) % 40}" r="2" fill="${mainColor}" opacity="0.5" />
+    </svg>
+  `;
+}
+
+function saveCurrentCollection() {
+  const outputVal = document.getElementById("output").value;
+  if (!outputVal) {
+    showToast("Generate a prompt first!", "warning");
+    return;
+  }
+
+  const preset = getSingleVal("preset");
+  const item = {
+    id: Date.now(),
+    title: preset !== "None" ? preset : "Custom Halloween Collection",
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+    content: outputVal
+  };
+
+  savedCollections.unshift(item);
+  localStorage.setItem('halloween_collections', JSON.stringify(savedCollections));
+  renderSavedHistory();
+  showToast("Collection Saved to Library!", "success");
+}
+
+function renderSavedHistory() {
+  const container = document.getElementById("savedCollectionsContainer");
+  document.getElementById('savedCount').textContent = savedCollections.length;
+
+  if (savedCollections.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-12 glass-panel rounded-3xl border border-white/5 text-slate-500 text-sm">
+        <i class="fa-solid fa-folder-open text-3xl mb-3 text-slate-600"></i>
+        <p>No saved collections yet. Click "Save Collection" on any generated prompt!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = "";
+  savedCollections.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.className = "glass-panel rounded-2xl p-4 border border-white/10 hover:border-witchgreen-400/40 transition space-y-3";
+    card.innerHTML = `
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="font-bold text-sm text-white">${item.title}</h3>
+          <span class="text-[10px] text-slate-400">${item.date}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="load-hist-btn px-3 py-1.5 rounded-xl bg-witchgreen-500/20 text-witchgreen-400 hover:bg-witchgreen-500/30 text-xs font-bold transition">
+            Load
+          </button>
+          <button class="del-hist-btn p-1.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs transition">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+      <p class="text-xs font-mono text-slate-400 line-clamp-2 bg-gothic-950/60 p-2 rounded-lg">
+        ${item.content}
+      </p>
+    `;
+
+    card.querySelector('.load-hist-btn').addEventListener('click', () => {
+      document.getElementById("output").value = item.content;
+      switchTab('tab-studio');
+      showToast("Collection Loaded into Studio!", "info");
+    });
+
+    card.querySelector('.del-hist-btn').addEventListener('click', () => {
+      savedCollections.splice(index, 1);
+      localStorage.setItem('halloween_collections', JSON.stringify(savedCollections));
+      renderSavedHistory();
+      showToast("Deleted from history", "info");
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function initAudio() {
+  if (synthPad) return;
+  try {
+    synthPad = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "sine" },
+      envelope: { attack: 2, decay: 3, sustain: 0.5, release: 4 }
+    }).toDestination();
+    synthPad.volume.value = -24;
+
+    clickChime = new Tone.MembraneSynth().toDestination();
+    clickChime.volume.value = -18;
+  } catch(e) {
+    console.warn("Audio init deferred");
+  }
+}
+
+function toggleAudio() {
+  Tone.start();
+  initAudio();
+  isAudioActive = !isAudioActive;
+
+  const btn = document.getElementById("audioToggleBtn");
+  const icon = document.getElementById("audioIcon");
+  const text = document.getElementById("audioText");
+
+  if (isAudioActive) {
+    icon.className = "fa-solid fa-volume-high text-pumpkin-400";
+    text.textContent = "Ambience On";
+    btn.classList.add("border-pumpkin-500");
+    if (synthPad) synthPad.triggerAttack(["C2", "G2", "Eb3"]);
+  } else {
+    icon.className = "fa-solid fa-volume-xmark text-slate-500";
+    text.textContent = "Ambience Off";
+    btn.classList.remove("border-pumpkin-500");
+    if (synthPad) synthPad.releaseAll();
+  }
+}
+
+function playClickSFX() {
+  if (isAudioActive && clickChime) {
+    clickChime.triggerAttackRelease("C1", "8n");
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+}
+
+function downloadFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function showToast(msg, type = "info") {
+  const container = document.getElementById("toastContainer");
+  const toast = document.createElement("div");
+
+  let colors = "bg-gothic-800 border-white/20 text-white";
+  if (type === "success") colors = "bg-pumpkin-500 text-black border-pumpkin-400 font-bold";
+  if (type === "warning") colors = "bg-amber-500 text-black font-bold";
+
+  toast.className = `px-4 py-3 rounded-2xl border shadow-2xl text-xs flex items-center gap-2 transform transition duration-300 translate-x-10 opacity-0 pointer-events-auto ${colors}`;
+  toast.innerHTML = `<i class="fa-solid fa-ghost"></i> ${msg}`;
+
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.remove("translate-x-10", "opacity-0");
+  }, 10);
+
+  setTimeout(() => {
+    toast.classList.add("translate-x-10", "opacity-0");
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+  document.getElementById(tabId).classList.remove('hidden');
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    if (btn.dataset.tab === tabId) {
+      btn.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 bg-pumpkin-500 text-black shadow-lg transition";
+    } else {
+      btn.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 bg-gothic-800 text-slate-400 hover:text-white border border-white/5 transition";
+    }
+  });
+}
+
+function initBackgroundCanvas() {
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let width, height;
+  let particles = [];
+
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  for (let i = 0; i < 35; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      size: Math.random() * 2 + 1,
+      speedY: -Math.random() * 0.4 - 0.1,
+      speedX: (Math.random() - 0.5) * 0.2,
+      opacity: Math.random() * 0.5 + 0.2,
+      color: Math.random() < 0.5 ? '#ff7a00' : '#9d4edd'
+    });
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    particles.forEach(p => {
+      p.y += p.speedY;
+      p.x += p.speedX;
+
+      if (p.y < 0) {
+        p.y = height;
+        p.x = Math.random() * width;
+      }
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.opacity;
+      ctx.fill();
+    });
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+window.onload = function() {
+  initFields();
+  initBackgroundCanvas();
+  renderSavedHistory();
+
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.addEventListener('click', () => switchTab(b.dataset.tab));
+  });
+
+  // Action Buttons
+  document.getElementById("generateBtn").addEventListener("click", () => generateMasterPrompt(false));
+  document.getElementById("remixBtn").addEventListener("click", () => generateMasterPrompt(true));
+  document.getElementById("surpriseBtn").addEventListener("click", () => {
+    randomizeAll();
+    generateMasterPrompt(false);
+  });
+  document.getElementById("resetBtn").addEventListener("click", resetAll);
+  document.getElementById("saveCollectionBtn").addEventListener("click", saveCurrentCollection);
+  document.getElementById("audioToggleBtn").addEventListener("click", toggleAudio);
+
+  // Copy Full Prompt Button
+  document.getElementById("copyPromptBtn").addEventListener("click", () => {
+    const val = document.getElementById("output").value || buildPromptText(false).fullText;
+    copyToClipboard(val);
+    showToast("Full Master Prompt Copied!", "success");
+  });
+
+  // Export File Handlers
+  document.getElementById("downloadTxtBtn").addEventListener("click", () => {
+    const val = document.getElementById("output").value;
+    if (!val) return showToast("Nothing to download yet!", "warning");
+    downloadFile("halloween-10-prompts.txt", val, "text/plain");
+  });
+
+  document.getElementById("downloadJsonBtn").addEventListener("click", () => {
+    const val = document.getElementById("output").value;
+    if (!val) return showToast("Nothing to download yet!", "warning");
+    const jsonStr = JSON.stringify({
+      title: "Halloween 10-Prompt Collection",
+      engine: currentTargetEngine,
+      generatedAt: new Date().toISOString(),
+      promptText: val
+    }, null, 2);
+    downloadFile("halloween-10-prompts.json", jsonStr, "application/json");
+  });
+
+  // Parameter sliders listeners
+  document.getElementById("paramStylize").addEventListener("input", (e) => {
+    document.getElementById("stylizeVal").textContent = e.target.value;
+  });
+  document.getElementById("paramChaos").addEventListener("input", (e) => {
+    document.getElementById("chaosVal").textContent = e.target.value;
+  });
+
+  // Target Engine Buttons
+  document.querySelectorAll('.engine-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.engine-btn').forEach(b => {
+        b.className = "engine-btn px-3 py-2 rounded-xl text-slate-400 hover:text-white transition";
+      });
+      btn.className = "engine-btn px-3 py-2 rounded-xl bg-pumpkin-500 text-black shadow transition font-bold";
+      currentTargetEngine = btn.dataset.engine;
+      showToast(`Switched Target AI Engine to ${btn.innerText}`, "info");
+      if (document.getElementById("output").value) generateMasterPrompt(false);
+    });
+  });
+
+  // Close menus on outside click
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest('.relative')) {
+      document.querySelectorAll(".multi-menu").forEach(m => m.classList.add("hidden"));
+    }
+  });
+
+  // Initial prompt generation on page load
+  generateMasterPrompt(false);
+};
+</script>
+</body>
+</html>
